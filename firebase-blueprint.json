@@ -1,0 +1,82 @@
+{
+  "projectInfo": {
+    "name": "WardOps",
+    "description": "Healthcare Shift & Staffing Operations System",
+    "defenseTarget": "Final-Year University IT Defense Project"
+  },
+  "entities": {
+    "staff": {
+      "collection": "staff",
+      "description": "Stores clinical and support personnel profiles, qualifications, and recent workload counters",
+      "fields": {
+        "id": { "type": "string", "description": "Auto-generated document ID" },
+        "name": { "type": "string", "description": "Full name of the healthcare professional" },
+        "role": { "type": "string", "description": "Clinical role: Doctor, Nurse, Lab Tech, Pharmacist, Radiologist" },
+        "department": { "type": "string", "description": "Assigned unit: Emergency, Intensive Care Unit (ICU), Pediatrics, Surgery, General Ward" },
+        "qualifications": { "type": "array<string>", "description": "List of certifications and skills, e.g. ['BLS', 'ACLS', 'Triage']" },
+        "employmentStatus": { "type": "string", "description": "Employment category: Full-time, Part-time, On-call" },
+        "currentWorkloadScore": { "type": "number", "description": "Integer counter representing cumulative shifts worked. Lower score indicates less fatigue and higher priority for replacement." },
+        "email": { "type": "string", "description": "Official hospital email address" },
+        "phoneNumber": { "type": "string", "description": "Contact number for simulated shift notifications" },
+        "createdAt": { "type": "timestamp", "description": "Date and time the staff member record was created" },
+        "updatedAt": { "type": "timestamp", "description": "Date and time the staff member record was last updated" }
+      }
+    },
+    "shifts": {
+      "collection": "shifts",
+      "description": "Hospital shift assignments, timing, and staffing requirements",
+      "fields": {
+        "id": { "type": "string", "description": "Unique shift identifier" },
+        "date": { "type": "string", "description": "Shift calendar date in YYYY-MM-DD format" },
+        "startTime": { "type": "string", "description": "Start time in HH:mm 24h format (e.g. 07:00)" },
+        "endTime": { "type": "string", "description": "End time in HH:mm 24h format (e.g. 15:00)" },
+        "department": { "type": "string", "description": "Department where the shift occurs" },
+        "requiredRole": { "type": "string", "description": "Required clinical role for this shift (e.g. Nurse)" },
+        "assignedStaffId": { "type": "string", "description": "ID of the staff member assigned to this shift, or empty if unassigned" },
+        "status": { "type": "string", "description": "Status: scheduled, in-progress, completed, unassigned" },
+        "notes": { "type": "string", "description": "Optional notes regarding shift handover or special requirements" }
+      }
+    },
+    "attendance": {
+      "collection": "attendance",
+      "description": "Shift clock-in and availability check records",
+      "fields": {
+        "id": { "type": "string", "description": "Unique record identifier" },
+        "shiftId": { "type": "string", "description": "Reference to the shifts collection document" },
+        "staffId": { "type": "string", "description": "Reference to the staff collection document" },
+        "status": { "type": "string", "description": "Attendance status: present, late, absent, unavailable" },
+        "timestamp": { "type": "timestamp", "description": "Time the attendance was recorded by the supervisor" },
+        "markedBy": { "type": "string", "description": "Supervisor email who logged this status" },
+        "reason": { "type": "string", "description": "Stated reason if absent or unavailable" }
+      }
+    },
+    "leaveRequests": {
+      "collection": "leaveRequests",
+      "description": "Time-off and emergency leave requests submitted by staff",
+      "fields": {
+        "id": { "type": "string", "description": "Unique request identifier" },
+        "staffId": { "type": "string", "description": "Reference to the staff collection document" },
+        "startDate": { "type": "string", "description": "Leave start date in YYYY-MM-DD format" },
+        "endDate": { "type": "string", "description": "Leave end date in YYYY-MM-DD format" },
+        "reason": { "type": "string", "description": "Reason provided by staff (e.g. Medical, Family, Study)" },
+        "status": { "type": "string", "description": "Status: pending, approved, rejected" },
+        "reviewedBy": { "type": "string", "description": "Supervisor identifier who reviewed the request" },
+        "createdAt": { "type": "timestamp", "description": "Submission timestamp" }
+      }
+    },
+    "reassignmentLogs": {
+      "collection": "reassignmentLogs",
+      "description": "Audit trail logging supervisor replacement decisions with candidate rankings",
+      "fields": {
+        "id": { "type": "string", "description": "Unique log identifier" },
+        "shiftId": { "type": "string", "description": "Shift ID that was reassigned" },
+        "previousStaffId": { "type": "string", "description": "Staff ID who was replaced" },
+        "newStaffId": { "type": "string", "description": "Replacement staff ID chosen by supervisor" },
+        "recommendationRank": { "type": "number", "description": "Rank position of the chosen candidate (1st, 2nd, etc.)" },
+        "reasonSummary": { "type": "string", "description": "Explanation why candidate was eligible (e.g., department match, low workload)" },
+        "timestamp": { "type": "timestamp", "description": "Time replacement was confirmed" },
+        "supervisorEmail": { "type": "string", "description": "Supervisor who confirmed the replacement" }
+      }
+    }
+  }
+}

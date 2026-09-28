@@ -1,0 +1,58 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    /**
+     * ========================================================================
+     * WARDPOS ACADEMIC DEFENSE & DEMO MODE CONFIGURATION
+     * ========================================================================
+     * NOTE: This rule set deliberately allows open read/write (`allow read, write: if true;`)
+     * to facilitate interactive testing and multi-device evaluation during university
+     * IT defense presentations without requiring panelists to sign up for accounts.
+     *
+     * PRODUCTION SECURITY RULES ARCHITECTURE (Specification):
+     * In a production clinical deployment, access control is strictly enforced using
+     * Firebase Authentication custom claims or Firestore user role documents:
+     *
+     * 1. Helper Functions:
+     *    function isAuthenticated() {
+     *      return request.auth != null;
+     *    }
+     *    function getUserRole() {
+     *      return request.auth.token.role; // Set via Firebase Auth Custom Claims: 'supervisor' | 'staff'
+     *    }
+     *    function isSupervisor() {
+     *      return isAuthenticated() && getUserRole() == 'supervisor';
+     *    }
+     *    function isOwner(userId) {
+     *      return isAuthenticated() && request.auth.uid == userId;
+     *    }
+     *
+     * 2. Collection Rules:
+     *    - /staff/{staffId}:
+     *      allow read: if isAuthenticated();
+     *      allow write: if isSupervisor(); // Only supervisors can create/edit staff profiles
+     *
+     *    - /shifts/{shiftId}:
+     *      allow read: if isAuthenticated();
+     *      allow create, update, delete: if isSupervisor(); // Only supervisors create or reassign shifts
+     *
+     *    - /attendance/{attendanceId}:
+     *      allow read: if isAuthenticated();
+     *      allow create, update: if isAuthenticated(); // Staff can clock in, supervisors can audit
+     *
+     *    - /leaveRequests/{requestId}:
+     *      allow read: if isAuthenticated();
+     *      allow create: if isAuthenticated(); // Any staff can submit leave
+     *      allow update, delete: if isSupervisor(); // Only supervisors can approve/reject
+     *
+     *    - /reassignmentLogs/{logId}:
+     *      allow read: if isAuthenticated();
+     *      allow create: if isSupervisor(); // Audit trail logged on replacement confirmation
+     * ========================================================================
+     */
+
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

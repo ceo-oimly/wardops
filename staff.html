@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WardOps — Hospital Staff Directory</title>
+    <meta name="description" content="Manage clinical personnel credentials, department assignments, shift availability, and workload scores." />
+    <script>
+      (function() {
+        try {
+          var originalFetch = typeof window !== 'undefined' && window.fetch ? window.fetch.bind(window) : null;
+          var currentFetch = originalFetch;
+          var fetchDescriptor = {
+            get: function() {
+              return currentFetch;
+            },
+            set: function(fn) {
+              currentFetch = fn;
+            },
+            configurable: true,
+            enumerable: true
+          };
+          if (typeof window !== 'undefined') {
+            Object.defineProperty(window, 'fetch', fetchDescriptor);
+            if (typeof Window !== 'undefined' && Window.prototype) {
+              try {
+                Object.defineProperty(Window.prototype, 'fetch', fetchDescriptor);
+              } catch (_) {}
+            }
+          }
+        } catch (e) {
+          console.warn('Polyfill for window.fetch setter skipped:', e);
+        }
+      })();
+    </script>
+    <link rel="stylesheet" href="/src/shared.css" />
+  </head>
+  <body>
+    <div class="app-layout">
+      <!-- Shared Sidebar Component -->
+      <aside class="app-sidebar">
+        <!-- Logo -->
+        <div class="sidebar-brand">
+          <div class="brand-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+          </div>
+          <span class="brand-name">wardops</span>
+        </div>
+
+        <!-- Facility Selector -->
+        <div class="facility-selector">
+          <div class="facility-info">
+            <div class="facility-badge-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="facility-title">St. Anne's Hospital</div>
+              <div class="facility-subtitle">Operations workspace</div>
+            </div>
+          </div>
+          <div class="facility-arrow">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Navigation Menu -->
+        <div class="sidebar-section-label">Workspace</div>
+        <nav class="sidebar-nav">
+          <a href="/coverage.html" class="nav-link">
+            <div class="nav-link-content">
+              <span class="nav-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="7" height="7"/>
+                  <rect x="14" y="3" width="7" height="7"/>
+                  <rect x="14" y="14" width="7" height="7"/>
+                  <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+              </span>
+              <span>Coverage monitor</span>
+            </div>
+          </a>
+
+          <a href="/roster.html" class="nav-link">
+            <div class="nav-link-content">
+              <span class="nav-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </span>
+              <span>Roster</span>
+            </div>
+          </a>
+
+          <a href="/staff.html" class="nav-link active">
+            <div class="nav-link-content">
+              <span class="nav-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </span>
+              <span>Staff</span>
+            </div>
+          </a>
+
+          <a href="/attendance.html" class="nav-link">
+            <div class="nav-link-content">
+              <span class="nav-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 11l3 3L22 4"/>
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                </svg>
+              </span>
+              <span>Attendance</span>
+            </div>
+          </a>
+
+          <a href="/leave-requests.html" class="nav-link">
+            <div class="nav-link-content">
+              <span class="nav-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+              </span>
+              <span>Leave requests</span>
+            </div>
+            <span class="nav-counter">4</span>
+          </a>
+        </nav>
+
+        <!-- Sidebar Footer -->
+        <div class="sidebar-footer">
+          <div class="sidebar-user">
+            <div class="avatar-initials">JM</div>
+            <div>
+              <div class="user-name">Jordan Miller</div>
+              <div class="user-role">Shift Supervisor</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content Area -->
+      <div class="main-viewport">
+        <!-- Shared Top Bar Component -->
+        <header class="app-topbar">
+          <div class="topbar-breadcrumb">
+            <span class="breadcrumb-root">Workspace</span>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">Staff directory</span>
+          </div>
+
+          <div class="topbar-actions">
+            <!-- Date Picker Pill -->
+            <button class="date-pill" id="btn-date-picker">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              <span id="topbar-date-display">Mon, Oct 14, 2024</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </button>
+
+            <!-- Notifications Bell -->
+            <button class="btn-icon-topbar" title="3 active coverage alerts">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              <span class="notification-badge">3</span>
+            </button>
+
+            <!-- User Avatar Circle -->
+            <div class="avatar-initials" style="width: 36px; height: 36px; font-size: 13px;">JM</div>
+          </div>
+        </header>
+
+        <!-- Page Viewport Content -->
+        <main class="page-container">
+          <!-- Page Header -->
+          <div class="page-header">
+            <div>
+              <div class="page-eyebrow">Personnel & Credentials</div>
+              <h1 class="page-title">Hospital Staff Directory</h1>
+              <p class="page-subtitle">Track clinical roles, certifications, and workload fatigue scores.</p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <button id="btn-seed-demo-staff" class="btn-primary-action" title="Populate realistic doctors, nurses and techs for defense presentation">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                </svg>
+                <span>Seed Sample Data</span>
+              </button>
+              <button id="btn-open-add-staff" class="btn-brand-solid">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                <span>Add Staff Member</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Staff High-Level Metrics (4 Stat Cards) -->
+          <section class="stats-grid">
+            <!-- Card 1: Total Staff -->
+            <div class="stat-card">
+              <div class="stat-card-top">
+                <div class="stat-icon-wrapper stat-icon-blue">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">Total registered staff</div>
+                  <div class="stat-value" id="stat-staff-total">--</div>
+                </div>
+              </div>
+              <div class="stat-meta meta-trend-neutral">
+                <span>Across 4 hospital wards</span>
+              </div>
+            </div>
+
+            <!-- Card 2: Available Now -->
+            <div class="stat-card">
+              <div class="stat-card-top">
+                <div class="stat-icon-wrapper stat-icon-green">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">Available for assignment</div>
+                  <div class="stat-value" id="stat-staff-available">--</div>
+                </div>
+              </div>
+              <div class="stat-meta meta-trend-positive">
+                <span>Eligible for replacement pool</span>
+              </div>
+            </div>
+
+            <!-- Card 3: Currently on Shift -->
+            <div class="stat-card">
+              <div class="stat-card-top">
+                <div class="stat-icon-wrapper stat-icon-amber">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">Currently on shift</div>
+                  <div class="stat-value" id="stat-staff-onshift">--</div>
+                </div>
+              </div>
+              <div class="stat-meta meta-trend-warning">
+                <span>Active clinical duty</span>
+              </div>
+            </div>
+
+            <!-- Card 4: On Approved Leave -->
+            <div class="stat-card">
+              <div class="stat-card-top">
+                <div class="stat-icon-wrapper stat-icon-purple">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">On approved leave</div>
+                  <div class="stat-value" id="stat-staff-onleave">--</div>
+                </div>
+              </div>
+              <div class="stat-meta meta-trend-neutral">
+                <span>Blocked from shift assignment</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Staff Search & Filters Card -->
+          <div class="staff-controls-card">
+            <div class="staff-filter-row">
+              <!-- Text search -->
+              <div class="staff-search-box">
+                <span class="staff-search-icon">🔍</span>
+                <input 
+                  type="text" 
+                  id="staff-search-input" 
+                  class="staff-search-input" 
+                  placeholder="Search staff by name, role, or qualification..."
+                />
+              </div>
+
+              <!-- Department Filter -->
+              <select id="filter-staff-dept" class="staff-filter-select">
+                <option value="ALL">All Departments</option>
+                <option value="Emergency">Emergency Department</option>
+                <option value="Medical / Surgical">Medical / Surgical</option>
+                <option value="Pediatrics">Pediatrics</option>
+                <option value="Intensive Care Unit">Intensive Care Unit</option>
+              </select>
+
+              <!-- Status Filter (3-tier) -->
+              <select id="filter-staff-status" class="staff-filter-select">
+                <option value="ALL">All Statuses</option>
+                <option value="Available">Available (Ready)</option>
+                <option value="On Shift">On Shift</option>
+                <option value="On Leave">On Leave</option>
+              </select>
+
+              <!-- Role Filter -->
+              <select id="filter-staff-role" class="staff-filter-select">
+                <option value="ALL">All Roles</option>
+                <option value="Doctor">Doctor</option>
+                <option value="Nurse">Nurse</option>
+                <option value="Lab Tech">Lab Tech</option>
+                <option value="Pharmacist">Pharmacist</option>
+                <option value="Radiologist">Radiologist</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Staff Directory Table -->
+          <div class="staff-table-wrapper">
+            <table class="staff-table">
+              <thead>
+                <tr>
+                  <th>Staff Member</th>
+                  <th>Clinical Role</th>
+                  <th>Department</th>
+                  <th>Status</th>
+                  <th>
+                    Workload Score
+                    <span style="font-size: 11px; color: var(--color-text-tertiary); font-weight: normal; margin-left: 4px;" title="Recent shifts worked. Lower workload prioritizes staff in replacement recommendations.">ℹ️</span>
+                  </th>
+                  <th>Qualifications</th>
+                  <th style="text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="staff-table-body">
+                <!-- Dynamically populated by staff-screen.js -->
+              </tbody>
+            </table>
+
+            <!-- Empty State -->
+            <div id="staff-empty-state" style="display: none; padding: 48px; text-align: center;">
+              <div style="font-size: 32px; margin-bottom: 8px;">🩺</div>
+              <h3 style="font-size: 16px; font-weight: 700; color: var(--color-text-primary);">No Staff Members Match Filter</h3>
+              <p style="font-size: 13px; color: var(--color-text-secondary); margin-top: 4px;">
+                Try adjusting your search query or reset the filters above.
+              </p>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- Add / Edit Staff Modal Dialog -->
+    <div id="staff-upsert-modal" class="modal-overlay" style="display: none;">
+      <div class="modal-container" style="max-width: 640px;">
+        <div class="modal-header-bar">
+          <div>
+            <h3 class="modal-title-text" id="staff-modal-title">Add Healthcare Professional</h3>
+            <p style="font-size: 12px; color: var(--color-text-secondary); margin-top: 2px;">
+              Registered personnel can be assigned to hospital shifts and recommended for replacements.
+            </p>
+          </div>
+          <button id="btn-close-staff-modal" class="modal-close-icon">&times;</button>
+        </div>
+
+        <form id="staff-upsert-form">
+          <div class="modal-body-content">
+            <div class="form-grid-2col">
+              <div class="form-field-group">
+                <label class="form-field-label">Full Name *</label>
+                <input type="text" id="input-staff-name" class="form-select-styled" placeholder="e.g. Dr. Arthur Vance" required />
+              </div>
+
+              <div class="form-field-group">
+                <label class="form-field-label">Official Work Email *</label>
+                <input type="email" id="input-staff-email" class="form-select-styled" placeholder="e.g. a.vance@wardops.hospital" required />
+              </div>
+            </div>
+
+            <div class="form-grid-2col">
+              <div class="form-field-group">
+                <label class="form-field-label">Clinical Role *</label>
+                <select id="input-staff-role" class="form-select-styled" required>
+                  <option value="Nurse">Nurse</option>
+                  <option value="Doctor">Doctor</option>
+                  <option value="Lab Tech">Lab Tech</option>
+                  <option value="Pharmacist">Pharmacist</option>
+                  <option value="Radiologist">Radiologist</option>
+                </select>
+              </div>
+
+              <div class="form-field-group">
+                <label class="form-field-label">Assigned Department *</label>
+                <select id="input-staff-dept" class="form-select-styled" required>
+                  <option value="Emergency Department">Emergency Department</option>
+                  <option value="Medical / Surgical">Medical / Surgical</option>
+                  <option value="Pediatrics">Pediatrics</option>
+                  <option value="Intensive Care Unit">Intensive Care Unit</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-grid-2col">
+              <div class="form-field-group">
+                <label class="form-field-label">Availability Status</label>
+                <select id="input-staff-status" class="form-select-styled">
+                  <option value="Available">Available (Ready for duty)</option>
+                  <option value="On Shift">On Shift (Currently working)</option>
+                  <option value="On Leave">On Leave (Unavailable)</option>
+                </select>
+              </div>
+
+              <div class="form-field-group">
+                <label class="form-field-label">
+                  Current Workload Score
+                  <span style="font-size: 11px; text-transform: none; color: var(--color-text-tertiary);">(Recent shifts)</span>
+                </label>
+                <input type="number" id="input-staff-workload" class="form-select-styled" min="0" max="25" value="0" />
+              </div>
+            </div>
+
+            <div class="form-field-group">
+              <label class="form-field-label">Contact Phone (For automated shift dispatch)</label>
+              <input type="tel" id="input-staff-phone" class="form-select-styled" placeholder="+1 (555) 234-5678" />
+            </div>
+
+            <div class="form-field-group">
+              <label class="form-field-label">Qualifications & Clinical Certifications</label>
+              <div class="qual-grid-box">
+                <label class="qual-checkbox-item">
+                  <input type="checkbox" name="qualifications" value="BLS (Basic Life Support)" />
+                  <span>BLS (Basic Life Support)</span>
+                </label>
+                <label class="qual-checkbox-item">
+                  <input type="checkbox" name="qualifications" value="ACLS (Advanced Cardiac Life Support)" />
+                  <span>ACLS (Advanced Cardiac Life Support)</span>
+                </label>
+                <label class="qual-checkbox-item">
+                  <input type="checkbox" name="qualifications" value="PALS (Pediatric Advanced Life Support)" />
+                  <span>PALS (Pediatric Advanced Life Support)</span>
+                </label>
+                <label class="qual-checkbox-item">
+                  <input type="checkbox" name="qualifications" value="Triage Certified" />
+                  <span>Triage Certified</span>
+                </label>
+                <label class="qual-checkbox-item">
+                  <input type="checkbox" name="qualifications" value="Critical Care Nursing (CCRN)" />
+                  <span>Critical Care Nursing (CCRN)</span>
+                </label>
+                <label class="qual-checkbox-item">
+                  <input type="checkbox" name="qualifications" value="Trauma Nursing (TNCC)" />
+                  <span>Trauma Nursing (TNCC)</span>
+                </label>
+                <label class="qual-checkbox-item">
+                  <input type="checkbox" name="qualifications" value="Phlebotomy" />
+                  <span>Phlebotomy</span>
+                </label>
+                <label class="qual-checkbox-item">
+                  <input type="checkbox" name="qualifications" value="Surgical First Assist" />
+                  <span>Surgical First Assist</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer-bar">
+            <button type="button" id="btn-cancel-staff-modal" class="btn-brand-outline">Cancel</button>
+            <button type="submit" id="btn-submit-staff" class="btn-brand-solid">Save Staff Member</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="/src/shared-nav.js"></script>
+    <script type="module">
+      import { initStaffScreen } from '/src/staff-screen.js';
+      document.addEventListener('DOMContentLoaded', () => {
+        initStaffScreen();
+      });
+    </script>
+  </body>
+</html>

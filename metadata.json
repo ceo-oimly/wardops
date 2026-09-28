@@ -1,0 +1,6 @@
+{
+  "name": "WardOps - Healthcare Shift & Staffing Operations",
+  "description": "Healthcare shift and staffing operations system for hospitals and clinics featuring coverage monitoring and automated eligible replacement recommendations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

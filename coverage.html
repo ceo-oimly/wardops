@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WardOps — Healthcare Coverage Monitor</title>
+    <meta name="description" content="WardOps healthcare shift and staffing operations coverage monitoring dashboard." />
+    <script>
+      (function() {
+        try {
+          var originalFetch = typeof window !== 'undefined' && window.fetch ? window.fetch.bind(window) : null;
+          var currentFetch = originalFetch;
+          var fetchDescriptor = {
+            get: function() {
+              return currentFetch;
+            },
+            set: function(fn) {
+              currentFetch = fn;
+            },
+            configurable: true,
+            enumerable: true
+          };
+          if (typeof window !== 'undefined') {
+            Object.defineProperty(window, 'fetch', fetchDescriptor);
+            if (typeof Window !== 'undefined' && Window.prototype) {
+              try {
+                Object.defineProperty(Window.prototype, 'fetch', fetchDescriptor);
+              } catch (_) {}
+            }
+          }
+        } catch (e) {
+          console.warn('Polyfill for window.fetch setter skipped:', e);
+        }
+      })();
+    </script>
+    <link rel="stylesheet" href="/src/shared.css" />
+  </head>
+  <body>
+    <div class="app-layout">
+      <!-- Shared Sidebar Component -->
+      <aside class="app-sidebar">
+        <!-- Logo -->
+        <div class="sidebar-brand">
+          <div class="brand-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+          </div>
+          <span class="brand-name">wardops</span>
+        </div>
+
+        <!-- Facility Selector -->
+        <div class="facility-selector">
+          <div class="facility-info">
+            <div class="facility-badge-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="facility-title">St. Anne's Hospital</div>
+              <div class="facility-subtitle">Operations workspace</div>
+            </div>
+          </div>
+          <div class="facility-arrow">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Navigation Menu -->
+        <div class="sidebar-section-label">Workspace</div>
+        <nav class="sidebar-nav">
+          <a href="/coverage.html" class="nav-link active">
+            <div class="nav-link-content">
+              <span class="nav-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="7" height="7"/>
+                  <rect x="14" y="3" width="7" height="7"/>
+                  <rect x="14" y="14" width="7" height="7"/>
+                  <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+              </span>
+              <span>Coverage monitor</span>
+            </div>
+          </a>
+
+          <a href="/roster.html" class="nav-link">
+            <div class="nav-link-content">
+              <span class="nav-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </span>
+              <span>Roster</span>
+            </div>
+          </a>
+
+          <a href="/staff.html" class="nav-link">
+            <div class="nav-link-content">
+              <span class="nav-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </span>
+              <span>Staff</span>
+            </div>
+          </a>
+
+          <a href="/attendance.html" class="nav-link">
+            <div class="nav-link-content">
+              <span class="nav-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 11l3 3L22 4"/>
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                </svg>
+              </span>
+              <span>Attendance</span>
+            </div>
+          </a>
+
+          <a href="/leave-requests.html" class="nav-link">
+            <div class="nav-link-content">
+              <span class="nav-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10 9 9 9 8 9"/>
+                </svg>
+              </span>
+              <span>Leave requests</span>
+            </div>
+            <span class="nav-counter">4</span>
+          </a>
+        </nav>
+
+        <!-- Sidebar Footer -->
+        <div class="sidebar-footer">
+          <div class="sidebar-user">
+            <div class="avatar-initials">JM</div>
+            <div>
+              <div class="user-name">Jordan Miller</div>
+              <div class="user-role">Shift Supervisor</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content Area -->
+      <div class="main-viewport">
+        <!-- Shared Top Bar Component -->
+        <header class="app-topbar">
+          <div class="topbar-breadcrumb">
+            <span class="breadcrumb-root">Workspace</span>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">Coverage monitor</span>
+          </div>
+
+          <div class="topbar-actions">
+            <!-- Date Picker Pill -->
+            <button class="date-pill" id="btn-date-picker">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              <span id="topbar-date-display">Mon, Oct 14, 2024</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </button>
+
+            <!-- Notifications Bell -->
+            <button class="btn-icon-topbar" title="3 active coverage alerts">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              <span class="notification-badge">3</span>
+            </button>
+
+            <!-- User Avatar Circle -->
+            <div class="avatar-initials" style="width: 36px; height: 36px; font-size: 13px;">JM</div>
+          </div>
+        </header>
+
+        <!-- Page Viewport Content -->
+        <main class="page-container">
+          <!-- Greeting Header -->
+          <div class="page-header">
+            <div>
+              <div class="page-eyebrow" id="coverage-date-eyebrow">Monday, October 14, 2024</div>
+              <h1 class="page-title">Good morning, <span id="coverage-greeting-name">Jordan</span></h1>
+              <p class="page-subtitle">Here's your staffing overview for today.</p>
+            </div>
+            <a href="/roster.html" class="btn-primary-action">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              <span>View full roster</span>
+            </a>
+          </div>
+
+          <!-- Stat Cards Grid -->
+          <section class="stats-grid">
+            <!-- Card 1: Overall Coverage -->
+            <div class="stat-card">
+              <div class="stat-card-top">
+                <div class="stat-icon-wrapper stat-icon-blue">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">Overall coverage</div>
+                  <div class="stat-value" id="stat-cov-overall">--%</div>
+                </div>
+              </div>
+              <div class="stat-meta meta-trend-positive">
+                <span>↑ 2.4% vs. last week</span>
+              </div>
+            </div>
+
+            <!-- Card 2: Open Gaps -->
+            <div class="stat-card">
+              <div class="stat-card-top">
+                <div class="stat-icon-wrapper stat-icon-amber">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">Open gaps</div>
+                  <div class="stat-value" id="stat-cov-gaps">--</div>
+                </div>
+              </div>
+              <div class="stat-meta meta-trend-warning">
+                <span>Needs attention today</span>
+              </div>
+            </div>
+
+            <!-- Card 3: On-time attendance -->
+            <div class="stat-card">
+              <div class="stat-card-top">
+                <div class="stat-icon-wrapper stat-icon-green">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">On-time attendance</div>
+                  <div class="stat-value" id="stat-cov-attendance">--%</div>
+                </div>
+              </div>
+              <div class="stat-meta meta-trend-positive">
+                <span>↑ 1.1% vs. last week</span>
+              </div>
+            </div>
+
+            <!-- Card 4: Staff on duty -->
+            <div class="stat-card">
+              <div class="stat-card-top">
+                <div class="stat-icon-wrapper stat-icon-purple">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">Staff on duty</div>
+                  <div class="stat-value" id="stat-cov-onduty">-- <span class="stat-denom">/ --</span></div>
+                </div>
+              </div>
+              <div class="stat-meta meta-trend-neutral">
+                <span>Across 4 departments</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Main Two-Column Layout -->
+          <div class="dashboard-grid">
+            <!-- Left Column: Department Coverage Grid + Recent Activity -->
+            <div class="dashboard-column">
+              <!-- Today's Coverage Surface Card -->
+              <section class="surface-card">
+                <div class="card-header">
+                  <div class="card-header-titles">
+                    <h2 class="card-title">Today's coverage</h2>
+                    <p class="card-subtitle">Staffed vs. required by department and shift</p>
+                  </div>
+                  <a href="/roster.html" class="card-link">View details &rarr;</a>
+                </div>
+
+                <!-- Status Legend -->
+                <div class="coverage-legend">
+                  <div class="legend-item">
+                    <span class="status-dot dot-good"></span>
+                    <span>Fully staffed</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="status-dot dot-warning"></span>
+                    <span>Short-staffed</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="status-dot dot-critical"></span>
+                    <span>Critical gap</span>
+                  </div>
+                </div>
+
+                <!-- Department List -->
+                <div class="department-list" id="department-coverage-list">
+                  <!-- Department 1: Emergency Department -->
+                  <div class="department-row">
+                    <div class="department-identity">
+                      <div class="dept-badge badge-ed">ED</div>
+                      <div class="department-name">Emergency Department</div>
+                    </div>
+                    <div class="shifts-row-grid">
+                      <!-- Morning: Fully staffed -->
+                      <div class="shift-block status-good">
+                        <span class="shift-block-label">Morning</span>
+                        <div class="shift-block-stat">
+                          <span class="shift-block-ratio">8/8</span>
+                        </div>
+                      </div>
+                      <!-- Afternoon: Short-staffed -->
+                      <div class="shift-block status-warning">
+                        <span class="shift-block-label">Afternoon</span>
+                        <div class="shift-block-stat">
+                          <span class="status-warning-icon">⚠</span>
+                          <span class="shift-block-ratio">7/8</span>
+                        </div>
+                      </div>
+                      <!-- Night: Short-staffed -->
+                      <div class="shift-block status-warning">
+                        <span class="shift-block-label">Night</span>
+                        <div class="shift-block-stat">
+                          <span class="status-warning-icon">⚠</span>
+                          <span class="shift-block-ratio">6/7</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Department 2: Medical / Surgical -->
+                  <div class="department-row">
+                    <div class="department-identity">
+                      <div class="dept-badge badge-ms">MS</div>
+                      <div class="department-name">Medical / Surgical</div>
+                    </div>
+                    <div class="shifts-row-grid">
+                      <!-- Morning: Fully staffed -->
+                      <div class="shift-block status-good">
+                        <span class="shift-block-label">Morning</span>
+                        <div class="shift-block-stat">
+                          <span class="shift-block-ratio">12/12</span>
+                        </div>
+                      </div>
+                      <!-- Afternoon: Short-staffed -->
+                      <div class="shift-block status-warning">
+                        <span class="shift-block-label">Afternoon</span>
+                        <div class="shift-block-stat">
+                          <span class="status-warning-icon">⚠</span>
+                          <span class="shift-block-ratio">11/12</span>
+                        </div>
+                      </div>
+                      <!-- Night: Fully staffed -->
+                      <div class="shift-block status-good">
+                        <span class="shift-block-label">Night</span>
+                        <div class="shift-block-stat">
+                          <span class="shift-block-ratio">10/10</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Department 3: Pediatrics -->
+                  <div class="department-row">
+                    <div class="department-identity">
+                      <div class="dept-badge badge-pd">PD</div>
+                      <div class="department-name">Pediatrics</div>
+                    </div>
+                    <div class="shifts-row-grid">
+                      <!-- Morning: Fully staffed -->
+                      <div class="shift-block status-good">
+                        <span class="shift-block-label">Morning</span>
+                        <div class="shift-block-stat">
+                          <span class="shift-block-ratio">6/6</span>
+                        </div>
+                      </div>
+                      <!-- Afternoon: Fully staffed -->
+                      <div class="shift-block status-good">
+                        <span class="shift-block-label">Afternoon</span>
+                        <div class="shift-block-stat">
+                          <span class="shift-block-ratio">6/6</span>
+                        </div>
+                      </div>
+                      <!-- Night: Critical Gap -->
+                      <div class="shift-block status-critical">
+                        <span class="shift-block-label">Night</span>
+                        <div class="shift-block-stat">
+                          <span class="status-critical-icon">⚠</span>
+                          <span class="shift-block-ratio">4/5</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Department 4: Intensive Care Unit -->
+                  <div class="department-row">
+                    <div class="department-identity">
+                      <div class="dept-badge badge-ic">IC</div>
+                      <div class="department-name">Intensive Care Unit</div>
+                    </div>
+                    <div class="shifts-row-grid">
+                      <!-- Morning: Fully staffed -->
+                      <div class="shift-block status-good">
+                        <span class="shift-block-label">Morning</span>
+                        <div class="shift-block-stat">
+                          <span class="shift-block-ratio">8/8</span>
+                        </div>
+                      </div>
+                      <!-- Afternoon: Fully staffed -->
+                      <div class="shift-block status-good">
+                        <span class="shift-block-label">Afternoon</span>
+                        <div class="shift-block-stat">
+                          <span class="shift-block-ratio">8/8</span>
+                        </div>
+                      </div>
+                      <!-- Night: Short-staffed -->
+                      <div class="shift-block status-warning">
+                        <span class="shift-block-label">Night</span>
+                        <div class="shift-block-stat">
+                          <span class="status-warning-icon">⚠</span>
+                          <span class="shift-block-ratio">7/8</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Recent Activity Surface Card -->
+              <section class="surface-card">
+                <div class="card-header">
+                  <div class="card-header-titles">
+                    <h2 class="card-title">Recent activity</h2>
+                    <p class="card-subtitle">Latest updates from your team</p>
+                  </div>
+                  <button class="btn-icon-topbar" style="border:none;" title="More options">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <circle cx="12" cy="12" r="2"/>
+                      <circle cx="19" cy="12" r="2"/>
+                      <circle cx="5" cy="12" r="2"/>
+                    </svg>
+                  </button>
+                </div>
+
+                <div class="activity-list" id="recent-activity-list">
+                  <!-- Populated dynamically by coverage.js from Firestore logs -->
+                </div>
+              </section>
+            </div>
+
+            <!-- Right Column: Active Alerts + Quick Actions -->
+            <div class="dashboard-column">
+              <!-- Active Alerts Surface Card -->
+              <section class="surface-card">
+                <div class="card-header">
+                  <div class="card-header-titles">
+                    <div style="display: flex; align-items: center;">
+                      <h2 class="card-title">Active alerts</h2>
+                      <span class="alert-badge-count" id="active-alerts-count">--</span>
+                    </div>
+                    <p class="card-subtitle">Coverage gaps requiring attention</p>
+                  </div>
+                </div>
+
+                <div class="alerts-list" id="active-alerts-list">
+                  <!-- Populated dynamically by coverage.js from Firestore shifts -->
+                </div>
+
+                <div class="alerts-footer-link">
+                  <a href="/attendance.html">View all coverage alerts &rarr;</a>
+                </div>
+              </section>
+
+              <!-- Quick Actions Surface Card -->
+              <section class="surface-card">
+                <div class="card-header">
+                  <div class="card-header-titles">
+                    <h2 class="card-title">Quick actions</h2>
+                    <p class="card-subtitle">Common tasks</p>
+                  </div>
+                </div>
+
+                <div class="quick-actions-list">
+                  <a href="/roster.html" class="quick-action-btn">
+                    <div class="quick-action-left">
+                      <div class="quick-action-icon quick-icon-teal">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                          <line x1="16" y1="2" x2="16" y2="6"/>
+                          <line x1="8" y1="2" x2="8" y2="6"/>
+                          <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                      </div>
+                      <span class="quick-action-label">Manage roster</span>
+                    </div>
+                    <span class="quick-action-arrow">&rarr;</span>
+                  </a>
+
+                  <a href="/staff.html" class="quick-action-btn">
+                    <div class="quick-action-left">
+                      <div class="quick-action-icon quick-icon-blue">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                          <circle cx="9" cy="7" r="4"/>
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                      </div>
+                      <span class="quick-action-label">View staff directory</span>
+                    </div>
+                    <span class="quick-action-arrow">&rarr;</span>
+                  </a>
+
+                  <a href="/leave-requests.html" class="quick-action-btn">
+                    <div class="quick-action-left">
+                      <div class="quick-action-icon quick-icon-amber">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                          <polyline points="14 2 14 8 20 8"/>
+                          <line x1="16" y1="13" x2="8" y2="13"/>
+                          <line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
+                      </div>
+                      <span class="quick-action-label">Review leave requests</span>
+                    </div>
+                    <span class="quick-action-arrow">&rarr;</span>
+                  </a>
+                </div>
+              </section>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script type="module" src="/src/shared-nav.js"></script>
+    <script type="module">
+      import { initCoverageScreen } from '/src/coverage.js';
+      document.addEventListener('DOMContentLoaded', () => {
+        initCoverageScreen();
+      });
+    </script>
+  </body>
+</html>

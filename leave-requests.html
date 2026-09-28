@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WardOps — Staff Leave Requests</title>
+    <meta name="description" content="Review clinical staff absence applications, evaluate shift roster coverage impact, and trigger automated replacement recommendations." />
+    <script>
+      (function() {
+        try {
+          var originalFetch = typeof window !== 'undefined' && window.fetch ? window.fetch.bind(window) : null;
+          var currentFetch = originalFetch;
+          var fetchDescriptor = {
+            get: function() {
+              return currentFetch;
+            },
+            set: function(fn) {
+              currentFetch = fn;
+            },
+            configurable: true,
+            enumerable: true
+          };
+          if (typeof window !== 'undefined') {
+            Object.defineProperty(window, 'fetch', fetchDescriptor);
+            if (typeof Window !== 'undefined' && Window.prototype) {
+              try {
+                Object.defineProperty(Window.prototype, 'fetch', fetchDescriptor);
+              } catch (_) {}
+            }
+          }
+        } catch (e) {
+          console.warn('Polyfill for window.fetch setter skipped:', e);
+        }
+      })();
+    </script>
+    <link rel="stylesheet" href="/src/shared.css" />
+  </head>
+  <body>
+    <div class="app-layout">
+      <!-- Shared Sidebar Component (Reused identically across all 5 pages) -->
+      <aside class="app-sidebar">
+        <!-- Logo -->
+        <div class="sidebar-brand">
+          <div class="brand-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+          </div>
+          <span class="brand-name">wardops</span>
+        </div>
+
+        <!-- Facility Selector -->
+        <div class="facility-selector">
+          <div class="facility-info">
+            <div class="facility-badge-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="facility-title">St. Anne's Hospital</div>
+              <div class="facility-subtitle">Operations workspace</div>
+            </div>
+          </div>
+          <div class="facility-arrow">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Navigation Menu -->
+        <div class="sidebar-section-label">Workspace</div>
+        <nav class="sidebar-nav">
+          <a href="/coverage.html" class="nav-link">
+            <div class="nav-link-content">
+              <span class="nav-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="7" height="7"/>
+                  <rect x="14" y="3" width="7" height="7"/>
+                  <rect x="14" y="14" width="7" height="7"/>
+                  <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+              </span>
+              <span>Coverage monitor</span>
+            </div>
+          </a>
+
+          <a href="/roster.html" class="nav-link">
+            <div class="nav-link-content">
+              <span class="nav-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </span>
+              <span>Roster</span>
+            </div>
+          </a>
+
+          <a href="/staff.html" class="nav-link">
+            <div class="nav-link-content">
+              <span class="nav-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </span>
+              <span>Staff</span>
+            </div>
+          </a>
+
+          <a href="/attendance.html" class="nav-link">
+            <div class="nav-link-content">
+              <span class="nav-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 11l3 3L22 4"/>
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                </svg>
+              </span>
+              <span>Attendance</span>
+            </div>
+          </a>
+
+          <a href="/leave-requests.html" class="nav-link active">
+            <div class="nav-link-content">
+              <span class="nav-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+              </span>
+              <span>Leave requests</span>
+            </div>
+            <span class="nav-counter">3</span>
+          </a>
+        </nav>
+
+        <!-- Sidebar Footer -->
+        <div class="sidebar-footer">
+          <div class="sidebar-user">
+            <div class="avatar-initials">JM</div>
+            <div>
+              <div class="user-name">Jordan Miller</div>
+              <div class="user-role">Shift Supervisor</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content Area -->
+      <div class="main-viewport">
+        <!-- Shared Top Bar Component -->
+        <header class="app-topbar">
+          <div class="topbar-breadcrumb">
+            <span class="breadcrumb-root">Workspace</span>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">Leave requests</span>
+          </div>
+
+          <div class="topbar-actions">
+            <!-- Date Picker Pill -->
+            <button class="date-pill" id="btn-date-picker">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              <span id="topbar-date-display">Mon, Oct 14, 2024</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </button>
+
+            <!-- Notifications Bell -->
+            <button class="btn-icon-topbar" title="3 active coverage alerts">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              <span class="notification-badge">3</span>
+            </button>
+
+            <!-- User Avatar Circle -->
+            <div class="avatar-initials" style="width: 36px; height: 36px; font-size: 13px;">JM</div>
+          </div>
+        </header>
+
+        <!-- Page Viewport Content -->
+        <main class="page-container">
+          <!-- Page Header -->
+          <div class="page-header">
+            <div>
+              <div class="page-eyebrow">Time-Off & Absence Management</div>
+              <h1 class="page-title">Staff Leave Requests</h1>
+              <p class="page-subtitle">Review clinical absence applications. Approving time-off screens against scheduled shifts and triggers replacement recommendations.</p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <button id="btn-seed-leave" class="btn-primary-action" title="Populate demo pending & approved requests for defense presentation">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                </svg>
+                <span>Seed Sample Data</span>
+              </button>
+              <button id="btn-open-request-modal" class="btn-brand-solid">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                <span>Request Time Off</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Leave Stat Cards Grid (4 Cards matching design system) -->
+          <section class="stats-grid">
+            <!-- Stat 1: Pending Action -->
+            <div class="stat-card">
+              <div class="stat-card-top">
+                <div class="stat-icon-wrapper stat-icon-amber">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">Pending supervisor review</div>
+                  <div class="stat-value" id="stat-leave-pending">3</div>
+                </div>
+              </div>
+              <div class="stat-meta meta-trend-warning">
+                <span>Requires action</span>
+              </div>
+            </div>
+
+            <!-- Stat 2: Approved This Month -->
+            <div class="stat-card">
+              <div class="stat-card-top">
+                <div class="stat-icon-wrapper stat-icon-green">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">Approved this month</div>
+                  <div class="stat-value" id="stat-leave-approved">1</div>
+                </div>
+              </div>
+              <div class="stat-meta meta-trend-positive">
+                <span>Coverage verified</span>
+              </div>
+            </div>
+
+            <!-- Stat 3: Rejected / Denied -->
+            <div class="stat-card">
+              <div class="stat-card-top">
+                <div class="stat-icon-wrapper" style="background: #fee2e2; color: #dc2626;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">Rejected / Shortage</div>
+                  <div class="stat-value" id="stat-leave-rejected">1</div>
+                </div>
+              </div>
+              <div class="stat-meta meta-trend-neutral">
+                <span>Staffing shortfall reason</span>
+              </div>
+            </div>
+
+            <!-- Stat 4: Staff Currently on Leave -->
+            <div class="stat-card">
+              <div class="stat-card-top">
+                <div class="stat-icon-wrapper stat-icon-purple">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">Staff currently on leave</div>
+                  <div class="stat-value" id="stat-leave-onleave">1</div>
+                </div>
+              </div>
+              <div class="stat-meta meta-trend-neutral">
+                <span>Excluded from replacement pool</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Search & Filter Card -->
+          <div class="staff-controls-card" style="margin-bottom: 20px;">
+            <div class="staff-filter-row">
+              <div class="staff-search-box">
+                <span class="staff-search-icon">🔍</span>
+                <input 
+                  type="text" 
+                  id="leave-search-input" 
+                  class="staff-search-input" 
+                  placeholder="Search by clinician name, department, or reason..."
+                />
+              </div>
+
+              <!-- Department Filter -->
+              <select id="filter-leave-dept" class="staff-filter-select">
+                <option value="ALL">All Departments</option>
+                <option value="Emergency Department">Emergency Department</option>
+                <option value="Medical / Surgical">Medical / Surgical</option>
+                <option value="Pediatrics">Pediatrics</option>
+                <option value="Intensive Care Unit">Intensive Care Unit</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Main Surface Card: Leave Requests List (Styled identically to Active Alerts) -->
+          <div class="surface-card">
+            <!-- Filter Tabs Header -->
+            <div class="leave-filter-tabs">
+              <button class="leave-tab-btn active" data-tab="ALL">
+                <span>All Requests</span>
+                <span class="tab-badge" id="tab-badge-all">5</span>
+              </button>
+              <button class="leave-tab-btn" data-tab="pending">
+                <span>Pending Review</span>
+                <span class="tab-badge badge-amber" id="tab-badge-pending">3</span>
+              </button>
+              <button class="leave-tab-btn" data-tab="approved">
+                <span>Approved</span>
+                <span class="tab-badge" id="tab-badge-approved">1</span>
+              </button>
+              <button class="leave-tab-btn" data-tab="rejected">
+                <span>Rejected</span>
+                <span class="tab-badge" id="tab-badge-rejected">1</span>
+              </button>
+            </div>
+
+            <!-- List Container -->
+            <div id="leave-requests-list" class="leave-requests-container">
+              <!-- Dynamically populated by leave-screen.js matching the Active Alerts pattern -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="leave-empty-state" style="display: none; padding: 48px; text-align: center;">
+              <div style="font-size: 32px; margin-bottom: 8px;">📋</div>
+              <h3 style="font-size: 16px; font-weight: 700; color: var(--color-text-primary);">No Leave Requests In This View</h3>
+              <p style="font-size: 13px; color: var(--color-text-secondary); margin-top: 4px;">
+                No personnel records match the current filter or search criteria.
+              </p>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- Request Time Off Modal Dialog -->
+    <div id="leave-request-modal" class="modal-overlay" style="display: none;">
+      <div class="modal-container" style="max-width: 600px;">
+        <div class="modal-header-bar">
+          <div>
+            <h3 class="modal-title-text">Submit Leave Application</h3>
+            <p style="font-size: 12px; color: var(--color-text-secondary); margin-top: 2px;">
+              Apply for planned or emergency time-off. Impact on assigned shifts will be calculated.
+            </p>
+          </div>
+          <button id="btn-close-leave-modal" class="modal-close-icon">&times;</button>
+        </div>
+
+        <form id="leave-request-form">
+          <div class="modal-body-content">
+            <div class="form-field-group">
+              <label class="form-field-label">Healthcare Professional *</label>
+              <select id="input-leave-staff" class="form-select-styled" required>
+                <!-- Populated dynamically from staff directory -->
+              </select>
+            </div>
+
+            <div class="form-grid-2col">
+              <div class="form-field-group">
+                <label class="form-field-label">Leave Category *</label>
+                <select id="input-leave-type" class="form-select-styled" required>
+                  <option value="Medical / Acute Illness">Medical / Acute Illness</option>
+                  <option value="Family Emergency">Family Emergency</option>
+                  <option value="Annual Vacation">Annual Vacation</option>
+                  <option value="Continuing Medical Education">Continuing Medical Education</option>
+                  <option value="Bereavement">Bereavement</option>
+                  <option value="Personal Time Off">Personal Time Off</option>
+                </select>
+              </div>
+
+              <div class="form-field-group">
+                <label class="form-field-label">Start Date *</label>
+                <input type="date" id="input-leave-start" class="form-select-styled" value="2024-10-18" required />
+              </div>
+            </div>
+
+            <div class="form-grid-2col">
+              <div class="form-field-group">
+                <label class="form-field-label">End Date (Inclusive) *</label>
+                <input type="date" id="input-leave-end" class="form-select-styled" value="2024-10-21" required />
+              </div>
+
+              <div class="form-field-group">
+                <label class="form-field-label">Supervisor Reviewer</label>
+                <input type="text" class="form-select-styled" value="Jordan Miller (Shift Supervisor)" disabled />
+              </div>
+            </div>
+
+            <div class="form-field-group">
+              <label class="form-field-label">Reason & Clinical Handover Details *</label>
+              <textarea 
+                id="input-leave-reason" 
+                class="form-select-styled" 
+                rows="3" 
+                placeholder="State the circumstances for time off and any ongoing patient responsibilities..."
+                required></textarea>
+            </div>
+          </div>
+
+          <div class="modal-footer-bar">
+            <button type="button" id="btn-cancel-leave-modal" class="btn-brand-outline">Cancel</button>
+            <button type="submit" id="btn-submit-leave" class="btn-brand-solid">Submit Leave Request</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="/src/shared-nav.js"></script>
+    <script type="module">
+      import { initLeaveScreen } from '/src/leave-screen.js';
+      document.addEventListener('DOMContentLoaded', () => {
+        initLeaveScreen();
+      });
+    </script>
+  </body>
+</html>
