@@ -1,5 +1,9 @@
 import path from 'path';
-import {defineConfig, Plugin} from 'vite';
+import { fileURLToPath } from 'url';
+import { defineConfig, Plugin } from 'vite';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Middleware to route root '/' requests to '/coverage.html'
 function rootRedirectPlugin(): Plugin {
@@ -21,17 +25,18 @@ export default defineConfig(() => {
     plugins: [rootRedirectPlugin()],
     resolve: {
       alias: {
-        '@': path.resolve(import.meta.dirname, '.'),
+        '@': path.resolve(__dirname, '.'),
       },
     },
     build: {
       rollupOptions: {
         input: {
-          coverage: path.resolve(import.meta.dirname, 'coverage.html'),
-          roster: path.resolve(import.meta.dirname, 'roster.html'),
-          staff: path.resolve(import.meta.dirname, 'staff.html'),
-          attendance: path.resolve(import.meta.dirname, 'attendance.html'),
-          leaveRequests: path.resolve(import.meta.dirname, 'leave-requests.html'),
+          index: path.resolve(__dirname, 'index.html'),
+          coverage: path.resolve(__dirname, 'coverage.html'),
+          roster: path.resolve(__dirname, 'roster.html'),
+          staff: path.resolve(__dirname, 'staff.html'),
+          attendance: path.resolve(__dirname, 'attendance.html'),
+          leaveRequests: path.resolve(__dirname, 'leave-requests.html'),
         },
       },
     },
